@@ -45,10 +45,18 @@ check(){
             error="$(nc -${ipversion}w "${TIMEOUT}" -zv ${host} 2>&1)"
             rc=$?
             [ "${rc}" -ne "${expected_rc}" ] && echo "${error}" | sed -e 's,nc: ,,' > "${TMP_DIR}/${id}.ko.info";;
+        service)
+            rc="$(systemctl is-active "${host}")"
+            if [ "$rc" != "active" ]; then
+                echo "Status code: ${rc}, expected: active" > "${TMP_DIR}/${id}.ko.info"
+            fi;;
+        proc-cmd)
+            rc="$(ps -eo args | grep "${host}" | grep -v grep)"
+            rc=$?
     esac
 
     # verity status and write files
-    if [ "${rc}" -eq "${expected_rc}" ]; then
+    if [ "${rc}" = "${expected_rc}" ]; then
         echo "${name}" > "${TMP_DIR}/${id}.ok"
     else
         echo "${name}" > "${TMP_DIR}/${id}.ko"
@@ -59,6 +67,7 @@ check(){
 command_exists 'curl'
 command_exists 'nc'
 command_exists 'ping'
+command_exists 'systemctl'
 mkdir -p "${TMP_DIR}" || exit 1
 
 # Execute checks
